@@ -59,24 +59,31 @@ tetris_map, shm = create_map(MAP_WIDTH, MAP_HEIGHT, empty=False)
 print(tetris_map)
 
 
+def evaluate_board(board):
+    holes = np.sum(np.diff(board, axis=0) < 0)
+    complete_lines = np.sum(np.all(board, axis=1))
+    return -holes + 10 * complete_lines
+
+
 def can_place_piece(piece, local_map, x, y):
     return np.all(
         (local_map[x : x + piece.shape[0], y : y + piece.shape[1]] + piece) <= 1
     )
 
 
-def place_piece(piece, local_map, x, y):
-    piece_width = len(piece[0])
-    piece_height = len(piece)
-
+def available_rotations(piece, local_map, x, y):
     rotation_image = piece.copy()
-
+    available_rotations = []
     for i in range(4):
-        print(i)
+        rotation_image = rotate_piece(rotation_image)
+        if can_place_piece(rotation_image, local_map, x, y):
+            available_rotations.append(i)
+    return available_rotations
 
 
 can_be_put = can_place_piece(piece, tetris_map, 0, 0)
 print(can_be_put)
-
+print(evaluate_board(tetris_map))
+print(available_rotations(piece, tetris_map, 0, 0))
 shm.close()  # close shared memory, so it doesn't get deleted but we are not using it anymore
 shm.unlink()  # delete shared memory
