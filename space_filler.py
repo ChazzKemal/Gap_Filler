@@ -5,6 +5,16 @@ from multiprocessing import shared_memory
 
 import numpy as np
 
+
+class Node:
+    def __init__(self, board, score, pieces_left, move, parent):
+        self.board = board
+        self.score = score
+        self.pieces_left = pieces_left
+        self.move = move
+        self.parent = parent
+
+
 # Constants
 MAP_WIDTH = 5
 MAP_HEIGHT = 5
@@ -49,13 +59,10 @@ def create_map(width, height, empty=True):
         probabilities = [0.8, 0.2]
         tetris_map = np.random.choice([0, 1], (width, height), p=probabilities)
 
-    shm = shared_memory.SharedMemory(create=True, size=tetris_map.nbytes)
-    np_array_shared = np.ndarray(tetris_map.shape, dtype=np.int8, buffer=shm.buf)
-    np_array_shared[:] = tetris_map[:]
-    return np_array_shared, shm
+    return tetris_map
 
 
-tetris_map, shm = create_map(MAP_WIDTH, MAP_HEIGHT, empty=False)
+tetris_map = create_map(MAP_WIDTH, MAP_HEIGHT, empty=False)
 print(tetris_map)
 
 
@@ -81,9 +88,19 @@ def available_rotations(piece, local_map, x, y):
     return available_rotations
 
 
+def get_possible_moves(piece, tetris_map):
+    possible_moves = []
+    for i in range(tetris_map.shape[0] - piece.shape[0] + 1):
+        for j in range(tetris_map.shape[1] - piece.shape[1] + 1):
+            available_rotations_at_position = available_rotations(
+                piece, tetris_map, i, j
+            )
+            possible_moves.extend([(i, j, k) for k in available_rotations_at_position])
+    return possible_moves
+
+
 can_be_put = can_place_piece(piece, tetris_map, 0, 0)
 print(can_be_put)
 print(evaluate_board(tetris_map))
 print(available_rotations(piece, tetris_map, 0, 0))
-shm.close()  # close shared memory, so it doesn't get deleted but we are not using it anymore
-shm.unlink()  # delete shared memory
+print(get_possible_moves(piece, tetris_map))
